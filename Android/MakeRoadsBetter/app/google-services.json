@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "900633484060",
+    "project_id": "makeroadsbetter-d1c7a",
+    "storage_bucket": "makeroadsbetter-d1c7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900633484060:android:428f3aa838f19505fc38d9",
+        "android_client_info": {
+          "package_name": "com.example.makeroadsbetter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUw0oi_iFpJBnq_lz_i8aug0dMXlSkFBM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
