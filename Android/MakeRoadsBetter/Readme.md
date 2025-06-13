@@ -1,4 +1,4 @@
-# 🛣️ MakeRoadsBetter
+# 🛣️ Make Roads Better
 
 **MakeRoadsBetter** is a Kotlin-based Android application built with Jetpack Compose that empowers users to capture and report poor road conditions or road closures. The app collects user-submitted photos and geolocation data, stores them in a global Firebase Firestore database, and displays them on a real-time map using OpenStreetMap. 
 
