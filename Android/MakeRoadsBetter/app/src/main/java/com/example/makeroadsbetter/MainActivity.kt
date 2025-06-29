@@ -179,7 +179,9 @@ package com.example.makeroadsbetter
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Activity.RESULT_OK
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -187,6 +189,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
@@ -372,31 +375,14 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
     locationUtils.requestLocationUpdates(viewModel)
     val location = viewModel.location.value
     var currentMarker: Marker? by remember { mutableStateOf(null) }
+    var marker: Marker? by remember { mutableStateOf(null) }
     val images = remember { mutableStateListOf<Bitmap>() }
     val coordinates = remember { mutableStateListOf<GeoPoint>() }
     var showPopup by remember { mutableStateOf(false) }
     var selectRoad by remember { mutableStateOf(false) }
     var selectedImage by remember { mutableStateOf<Bitmap?>(null) }
     var routesCordinates= emptyList<GeoPoint>()
-
-    val imageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let {
-            val base64Image = bitmapToBase64(it)
-
-            val data = hashMapOf(
-                "latitude" to selectedPoint?.latitude,
-                "longitude" to selectedPoint?.longitude,
-                "image" to base64Image
-            )
-
-            firestore.collection("roadConditionDataMap")
-                .add(data)
-                .addOnSuccessListener { Log.d("FIRESTORE", "Image stored successfully!") }
-                .addOnFailureListener { e -> Log.e("FIRESTORE", "Error storing image", e) }
-        }
-    }
+    var launchCamera by remember { mutableStateOf(false) }
 
     val mapView = remember {
         MapView(context).apply {
@@ -413,7 +399,84 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
             mapView,firestore
         )
     }
+    var shouldLaunchCamera by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == RESULT_OK) {
+            val bitmap = it.data?.extras?.get("data") as? Bitmap
+            bitmap?.let { image ->
+                selectedPoint?.let { point ->
+                    // ✅ Add marker with photo at selected point
+                    mapView?.let { map ->
+                        val marker = Marker(map).apply {
+                            position = point
+                            title = "Photo Marker"
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            setOnMarkerClickListener { _, _ ->
+                                Toast.makeText(
+                                    context,
+                                    "Marker at ${point.latitude}, ${point.longitude}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                true
+                            }
+                        }
+
+                        map.overlays.add(marker)
+                        map.invalidate()
+                    }
+                }
+            }
+        }
+    }
+
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            val base64Image = bitmapToBase64(it)
+
+            val point = selectedPoint
+            if (point != null) {
+                val data = hashMapOf(
+                    "latitude" to point.latitude,
+                    "longitude" to point.longitude,
+                    "image" to base64Image
+                )
+
+                firestore.collection("roadConditionDataMap")
+                    .add(data)
+                    .addOnSuccessListener { Log.d("FIRESTORE", "Image stored successfully!") }
+                    .addOnFailureListener { e -> Log.e("FIRESTORE", "Error storing image", e) }
+
+                // ✅ Add marker to map
+                mapView?.let { map ->
+                    val marker = Marker(map).apply {
+                        position = point
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        title = "Road Issue"
+                        setOnMarkerClickListener { _, _ ->
+                            Toast.makeText(context, "Image stored at this location", Toast.LENGTH_SHORT).show()
+                            true
+                        }
+                    }
+                    map.overlays.add(marker)
+                    map.invalidate()
+                }
+            }
+        }
+    }
+    if (launchCamera) {
+        imageLauncher.launch(null)
+        launchCamera = false
+    }
     LaunchedEffect(location,images) {
+        if (shouldLaunchCamera) {
+            val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraLauncher.launch(cameraIntent)
+            shouldLaunchCamera = false
+        }
+
         if (location != null) {
             val geoPoint = location?.let { it1 -> GeoPoint(it1.latitude, location.longitude) }
             mapView.controller.animateTo(geoPoint)
@@ -444,11 +507,11 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
                             images.add(bitmap)
                             val marker2 = Marker(mapView).apply {
 
-                                position = GeoPoint(latitude,longitude)
+                                position = GeoPoint(latitude, longitude)
                                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                                 title = "Selected Location"
                                 setOnMarkerClickListener { m, _ ->
-                                    selectedImage= bitmap
+                                    selectedImage = bitmap
                                     showPopup = true
                                     true
                                 }
@@ -461,6 +524,30 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
 
                 }
                 .addOnFailureListener { e -> Log.e("FIRESTORE", "Error fetching images", e) }
+
+            val mapEventsOverlay = MapEventsOverlay(object : MapEventsReceiver {
+                override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                    p?.let {
+                        selectedPoint = it
+                        Toast.makeText(
+                            context,
+                            "Lat: ${it.latitude}, Lon: ${it.longitude}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        Log.d("THISSSSSSSSSSSSSS", "Lat: ${it.latitude}, Lon: ${it.longitude}")
+//                        shouldLaunchCamera = true // ✅ trigger camera safely
+                        launchCamera=true
+                    }
+
+                    return true
+                }
+
+                override fun longPressHelper(p: GeoPoint?): Boolean {
+                    return true
+                }
+            })
+            mapView.overlays.add(mapEventsOverlay)
+
         }
         mapView
     }
@@ -470,7 +557,7 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
         Button(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
             Text("Back to Home")
         }
-        Button(onClick = {selectRoad=true}) { }
+        Button(onClick = {selectRoad=true}) { Text("Start selecting road")}
         Button(
             onClick = { storePolylineInFirestore(routesCordinates, firestore) },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -479,6 +566,7 @@ fun OsmMapView(viewModel: LocationViewModel, navController: NavController) {
         }
     }
 }
+
 @Composable
 fun SelectRoad(mapView: MapView, firestore: FirebaseFirestore): List<GeoPoint> {
     var routePoints = remember { mutableStateListOf<GeoPoint>() }
@@ -530,6 +618,7 @@ private fun drawPolyline(routePoints: List<GeoPoint>, map: MapView,firestore: Fi
         val coordinatesList = routePoints.map { point ->
             mapOf("latitude" to point.latitude, "longitude" to point.longitude)
         }
+        Log.d("Points",coordinatesList.toString())
     }
 }
 
