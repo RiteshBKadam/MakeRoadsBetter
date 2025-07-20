@@ -7,15 +7,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.makeroadsbetter"
+    namespace = "com.riteshbkadam.makeroadsbetter"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.makeroadsbetter"
-        minSdk = 33
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        applicationId = "com.riteshbkadam.makeroadsbetter"
+        minSdk = 30
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,9 +43,8 @@ android {
 
 dependencies {
 
-        // osmdroid core
-        implementation (libs.osmdroid.android)
-        implementation (libs.okhttp)
+    implementation (libs.osmdroid.android)
+    implementation (libs.okhttp)
 
 
     implementation(libs.firebase.auth.ktx)

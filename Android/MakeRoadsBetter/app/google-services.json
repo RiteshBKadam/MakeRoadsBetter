@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:900633484060:android:428f3aa838f19505fc38d9",
+        "mobilesdk_app_id": "1:900633484060:android:f764a238dad9252efc38d9",
         "android_client_info": {
-          "package_name": "com.example.makeroadsbetter"
+          "package_name": "com.riteshbkadam.makeroadsbetter"
         }
       },
       "oauth_client": [],

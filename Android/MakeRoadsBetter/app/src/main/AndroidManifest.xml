@@ -11,19 +11,19 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".MyApplication"
+        android:name="com.riteshbkadam.makeroadsbetter.MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/mrb"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/mrb_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MakeRoadsBetter"
         tools:targetApi="31">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.riteshbkadam.makeroadsbetter.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.MakeRoadsBetter">
